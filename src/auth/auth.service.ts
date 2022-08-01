@@ -11,10 +11,11 @@ import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { MailService } from '../mail/mail.service';
 import { UserService } from '../user/user.service';
+import { ClinicService } from '../clinic/clinic.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { AuthDto } from './dto';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateAccountDto } from './dto/create-account.dto';
 import { Auth, JwtPayload, Tokens } from './types';
 
 @Injectable()
@@ -24,10 +25,11 @@ export class AuthService {
     private jwtService: JwtService,
     private config: ConfigService,
     private userService: UserService,
+    private clinicService: ClinicService,
     private mailService: MailService,
   ) {}
 
-  async signupLocal(dto: CreateUserDto): Promise<Auth> {
+  async signupLocal(dto: CreateAccountDto): Promise<Auth> {
     try {
       const userEmail = await this.userService.findByEmail(dto.email);
 
@@ -36,6 +38,14 @@ export class AuthService {
       }
 
       const user = await this.userService.createUser(dto);
+
+      const clinic = await this.clinicService.createClinicOnSignup(
+        dto.clinica_cnpj,
+        dto.clinica_name,
+        user.id,
+      );
+
+      
 
       const tokens = await this.getTokens(user.id, user.email);
 
@@ -48,6 +58,10 @@ export class AuthService {
         user: {
           name: user.name,
           email: user.email,
+        },
+        clinic: {
+          cnpj: clinic.cnpj,
+          name: clinic.name,
         },
       };
     } catch (error) {

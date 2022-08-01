@@ -10,6 +10,7 @@ import { UserModule } from '../user/user.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BlockListModule } from '../blocklist/blocklist.module';
 import { BlockListService } from '../blocklist/blocklist.service';
+import { ClinicModule } from 'src/clinic/clinic.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { BlockListService } from '../blocklist/blocklist.service';
     }),
     MailModule,
     UserModule,
+    ClinicModule,
     BlockListModule,
   ],
   controllers: [AuthController],

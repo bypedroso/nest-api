@@ -9,6 +9,7 @@ import { Prisma, User } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from '../auth/dto/create-user.dto';
+import { CreateAccountDto } from 'src/auth/dto';
 
 export type UpdateProperties = Partial<Omit<User, 'updated_at' | 'created_at'>>;
 

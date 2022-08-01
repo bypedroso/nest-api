@@ -14,11 +14,37 @@ model User {
   password       String   @db.VarChar(255)
   hashedRt       String?  @db.VarChar(255)
   email_verified Boolean? @default(false)
+  clinics        UsersOnClinics[]
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 
   @@map("users")
 }
+
+model Clinic {
+  id                      String   @id @default(uuid())
+  cnpj                    String   @db.VarChar(255) @unique
+  name                    String   @db.VarChar(255)
+  responsible_user_id     String   @db.VarChar(255)
+  users                   UsersOnClinics[]
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  @@map("clinics")
+}
+
+model UsersOnClinics {
+  id             String   @id @default(uuid())
+  user           User     @relation(fields: [user_id], references: [id])
+  user_id        String
+  clinic         Clinic   @relation(fields: [clinic_id], references: [id])
+  clinic_id      String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@map("users_clinics")
+}
+
 
 model ForgotPassword {
   id         String   @id @default(uuid())

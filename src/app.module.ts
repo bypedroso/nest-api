@@ -8,6 +8,7 @@ import { LoggerModule } from './logger/logger.module';
 import { MailModule } from './mail/mail.module';
 import { UserModule } from './user/user.module';
 import { BlockListModule } from './blocklist/blocklist.module';
+import { ClinicModule } from './clinic/clinic.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { BlockListModule } from './blocklist/blocklist.module';
     MailModule,
     UserModule,
     BlockListModule,
+    ClinicModule,
   ],
   providers: [
     {

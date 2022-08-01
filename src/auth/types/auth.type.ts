@@ -5,6 +5,12 @@ export type UserLoginInfo = {
   name: string;
 };
 
+export type ClinicSignup = {
+  cnpj: string;
+  name: string;
+};
+
 export type Auth = {
   user: UserLoginInfo;
+  clinic?: ClinicSignup;
 } & Tokens;

@@ -18,11 +18,11 @@ import { RtGuard } from '../common/guards';
 import { AuthService } from './auth.service';
 import {
   AuthDto,
-  CreateUserDto,
   ForgotPasswordDto,
   ResetPasswordDto,
   UpdatePasswordDto,
   VerifyEmailTokenDto,
+  CreateAccountDto,
 } from './dto';
 import { Auth, Tokens } from './types';
 
@@ -38,7 +38,7 @@ export class AuthController {
   @Public()
   @Post('local/signup')
   @HttpCode(HttpStatus.CREATED)
-  signupLocal(@Body() dto: CreateUserDto): Promise<Auth> {
+  signupLocal(@Body() dto: CreateAccountDto): Promise<Auth> {
     return this.authService.signupLocal(dto);
   }
 
