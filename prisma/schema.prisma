@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @db.VarChar(255) @unique
+  name           String   @db.VarChar(255)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  password       String   @db.VarChar(255)
+  hashedRt       String?  @db.VarChar(255)
+  email_verified Boolean? @default(false)
+
+  @@map("users")
+}
+
+model ForgotPassword {
+  id         Int      @id @default(autoincrement())
+  email      String   @db.VarChar(255) @unique
+  token      String   @db.VarChar(400)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("forgot_passwords")
+}
