@@ -1,4 +1,4 @@
-import * as argon from 'argon2';
+import * as bcrypt from 'bcrypt';
 import {
   BadRequestException,
   ForbiddenException,
@@ -16,7 +16,7 @@ export type UpdateProperties = Partial<Omit<User, 'updated_at' | 'created_at'>>;
 export class UserService {
   constructor(private prismaService: PrismaService) {}
 
-  async findById(id: number): Promise<User> {
+  async findById(id: string): Promise<User> {
     const user = await this.prismaService.user.findUnique({
       where: {
         id,
@@ -54,7 +54,7 @@ export class UserService {
   }
 
   async createUser(dto: CreateUserDto): Promise<User> {
-    const password = await argon.hash(dto.password);
+    const password = await bcrypt.hash(dto.password, 10);
 
     const newUser = await this.prismaService.user
       .create({
@@ -77,7 +77,7 @@ export class UserService {
     return newUser;
   }
 
-  async updateUser(id: number, properties: UpdateProperties): Promise<User> {
+  async updateUser(id: string, properties: UpdateProperties): Promise<User> {
     try {
       if (properties.email) {
         const hasEmail = await this.prismaService.user.findFirst({
@@ -87,7 +87,7 @@ export class UserService {
         });
         if (hasEmail)
           throw new BadRequestException(
-            'E-mail already used from another user!',
+            'E-mail já está em uso por outro usuário!',
           );
       }
       const updatedUser = await this.prismaService.user.update({
@@ -102,9 +102,9 @@ export class UserService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
-          throw new BadRequestException('User does not found');
+          throw new BadRequestException('Usuário não encontrado!');
         }
-      } else if (error.message === 'E-mail already used from another user!') {
+      } else if (error.message === 'E-mail já está em uso por outro usuário!') {
         throw error;
       }
 

@@ -21,7 +21,7 @@ export class UserController {
   @Put('')
   @HttpCode(HttpStatus.OK)
   async update(
-    @GetCurrentUserId() userId: number,
+    @GetCurrentUserId() userId: string,
     @Body() dto: UpdateUserDto,
   ): Promise<ResponseUserDto> {
     if (!dto.email && !dto.name) {
@@ -37,7 +37,7 @@ export class UserController {
 
   @Get('whoami')
   @HttpCode(HttpStatus.OK)
-  async getUser(@GetCurrentUserId() userId: number): Promise<ResponseUserDto> {
+  async getUser(@GetCurrentUserId() userId: string): Promise<ResponseUserDto> {
     const user = await this.userService.findById(userId);
     const responseUser = {
       email: user.email,

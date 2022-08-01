@@ -9,7 +9,7 @@ export class MailService {
   async sendUserConfirmation(user: User, app_name: string, url: string) {
     await this.mailerService.sendMail({
       to: user.email,
-      subject: 'Welcome to Nice App! Confirm your Email',
+      subject: 'Bem vindo ao Easyvet! Confirme seu Email',
       template: join(
         process.cwd(),
         'dist',

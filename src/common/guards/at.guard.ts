@@ -21,6 +21,8 @@ export class AtGuard extends AuthGuard('jwt') {
     if (isPublic) return true;
     const request = await context.switchToHttp().getRequest();
 
+    console.log(request);
+
     const token = request.headers.authorization.split(' ')[1];
 
     const isBlocked = await this.blockListService.get(`block:${token}`);

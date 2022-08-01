@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { AppModule } from '../app.module';
 import { JwtModule, JwtService } from '@nestjs/jwt';
-import * as argon from 'argon2';
+import * as bcrypt from 'bcrypt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BlockListService } from '../blocklist/blocklist.service';
 import { UserService } from '../user/user.service';
@@ -161,7 +161,7 @@ describe('Auth Flow', () => {
   describe('logout', () => {
     it('should pass if call to non existent user', async () => {
       mockRepository.set.mockResolvedValueOnce(null);
-      const result = await authController.logout('Bearer token', 4);
+      const result = await authController.logout('Bearer token', '4');
       expect(mockRepository.set).toHaveBeenCalledTimes(1);
       expect(result).toBeUndefined();
     });
@@ -200,7 +200,7 @@ describe('Auth Flow', () => {
     it('should throw if no existing user', async () => {
       let tokens: Tokens | undefined;
       try {
-        tokens = await authController.refreshTokens(1, '');
+        tokens = await authController.refreshTokens('1', '');
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Access Denied');
@@ -219,7 +219,7 @@ describe('Auth Flow', () => {
       const rt = _tokens.refresh_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded?.sub);
+      const userId = String(decoded?.sub);
 
       mockRepository.set.mockResolvedValueOnce(null);
       await authController.logout('Bearer token', userId);
@@ -248,7 +248,7 @@ describe('Auth Flow', () => {
       const rt = _tokens.refresh_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded?.sub);
+      const userId = String(decoded?.sub);
 
       let tokens: Tokens | undefined;
       try {
@@ -274,7 +274,7 @@ describe('Auth Flow', () => {
       const at = _tokens.access_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded?.sub);
+      const userId = String(decoded?.sub);
 
       await new Promise((resolve) => {
         setTimeout(() => {
@@ -301,7 +301,7 @@ describe('Auth Flow', () => {
       const rt = _tokens.refresh_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded?.sub);
+      const userId = String(decoded?.sub);
       const jwtService = moduleRef.get(JwtService);
       const spy = jest.spyOn(jwtService, 'verify');
       spy.mockImplementationOnce(() => {
@@ -330,7 +330,7 @@ describe('Auth Flow', () => {
       const rt = _tokens.refresh_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded?.sub);
+      const userId = String(decoded?.sub);
 
       const jwtService = moduleRef.get(JwtService);
       const spy = jest.spyOn(jwtService, 'verify');
@@ -377,7 +377,7 @@ describe('Auth Flow', () => {
 
     it('should throw a ForbiddenException error when user does not exist', async () => {
       try {
-        await authController.resendVerifyEmail(0);
+        await authController.resendVerifyEmail('0');
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toBe('Access Denied');
@@ -420,7 +420,7 @@ describe('Auth Flow', () => {
       const rt = _tokens.refresh_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded?.sub);
+      const userId = String(decoded?.sub);
 
       await authController.updatePassword(userId, {
         oldPassword: user.password,
@@ -431,9 +431,9 @@ describe('Auth Flow', () => {
           id: userId,
         },
       });
-      const newPasswordHash = await argon.verify(
-        prismaUser.password,
+      const newPasswordHash = await bcrypt.compare(
         'newPassword',
+        prismaUser.password,
       );
       expect(newPasswordHash).toBeTruthy();
     });
@@ -448,7 +448,7 @@ describe('Auth Flow', () => {
       const rt = _tokens.refresh_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded?.sub);
+      const userId = String(decoded?.sub);
       try {
         await authController.updatePassword(userId, {
           oldPassword: 'incorrectPassword',
@@ -464,9 +464,9 @@ describe('Auth Flow', () => {
           id: userId,
         },
       });
-      const oldPasswordHash = await argon.verify(
-        prismaUser.password,
+      const oldPasswordHash = await bcrypt.compare(
         user.password,
+        prismaUser.password,
       );
       expect(oldPasswordHash).toBeTruthy();
     });
@@ -549,9 +549,9 @@ describe('Auth Flow', () => {
           email: user.email,
         },
       });
-      const isNewPassword = await argon.verify(
-        prismaUser.password,
+      const isNewPassword = await bcrypt.compare(
         'newPassword',
+        prismaUser.password,
       );
       expect(isNewPassword).toBeTruthy();
     });
@@ -579,9 +579,9 @@ describe('Auth Flow', () => {
             email: user.email,
           },
         });
-        const isOldPassword = await argon.verify(
-          prismaUser.password,
+        const isOldPassword = await bcrypt.compare(
           user.password,
+          prismaUser.password,
         );
         expect(isOldPassword).toBeTruthy();
       }
@@ -613,9 +613,9 @@ describe('Auth Flow', () => {
             email: user.email,
           },
         });
-        const isOldPassword = await argon.verify(
-          prismaUser.password,
+        const isOldPassword = await bcrypt.compare(
           user.password,
+          prismaUser.password,
         );
         expect(isOldPassword).toBeTruthy();
       }
@@ -654,9 +654,9 @@ describe('Auth Flow', () => {
             email: user.email,
           },
         });
-        const isOldPassword = await argon.verify(
-          prismaUser.password,
+        const isOldPassword = await bcrypt.compare(
           user.password,
+          prismaUser.password,
         );
         expect(isOldPassword).toBeTruthy();
       }

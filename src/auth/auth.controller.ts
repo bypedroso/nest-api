@@ -25,6 +25,7 @@ import {
   VerifyEmailTokenDto,
 } from './dto';
 import { Auth, Tokens } from './types';
+
 @ApiBearerAuth()
 @ApiTags('auth')
 @Controller('auth')
@@ -52,7 +53,7 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(
     @Headers('authorization') authorization: string,
-    @GetCurrentUserId() userId: number,
+    @GetCurrentUserId() userId: string,
   ): Promise<void> {
     await this.authService.logout(userId);
     await this.blockListService.set(`block:${authorization.split(' ')[1]}`, {
@@ -67,7 +68,7 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   refreshTokens(
-    @GetCurrentUserId() userId: number,
+    @GetCurrentUserId() userId: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
   ): Promise<Tokens> {
     return this.authService.refreshTokens(userId, refreshToken);
@@ -83,7 +84,7 @@ export class AuthController {
 
   @Get('email/verify')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async resendVerifyEmail(@GetCurrentUserId() userId: number): Promise<void> {
+  async resendVerifyEmail(@GetCurrentUserId() userId: string): Promise<void> {
     await this.authService.resendVerifyEmail(userId);
     return;
   }
@@ -91,7 +92,7 @@ export class AuthController {
   @Patch('password/update')
   @HttpCode(HttpStatus.NO_CONTENT)
   async updatePassword(
-    @GetCurrentUserId() userId: number,
+    @GetCurrentUserId() userId: string,
     @Body() body: UpdatePasswordDto,
   ): Promise<void> {
     await this.authService.changePassword(

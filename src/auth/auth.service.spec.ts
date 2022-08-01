@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { Tokens } from './types';
-import * as argon from 'argon2';
+import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { MailService } from '../mail/mail.service';
 import {
@@ -157,7 +157,7 @@ describe('AuthService', () => {
     });
 
     it('should login', async () => {
-      const password = await argon.hash(user.password);
+      const password = await bcrypt.hash(user.password, 10);
       mockUserService.find.mockResolvedValueOnce({
         ...user,
         password,
@@ -174,7 +174,7 @@ describe('AuthService', () => {
     });
 
     it('should throw if password incorrect', async () => {
-      const password = await argon.hash(user.password);
+      const password = await bcrypt.hash(user.password, 10);
       mockUserService.find.mockResolvedValueOnce({
         ...user,
         password,
@@ -265,7 +265,7 @@ describe('AuthService', () => {
 
     it('should throw if refresh token incorrect', async () => {
       const rt = 'hash';
-      const hashedRt = await argon.hash(rt);
+      const hashedRt = await bcrypt.hash(rt, 10);
       mockUserService.findById.mockResolvedValueOnce({
         hashedRt,
       });
@@ -282,7 +282,7 @@ describe('AuthService', () => {
 
     it('should throw if refresh token incorrect', async () => {
       const rt = 'hash';
-      const hashedRt = await argon.hash(rt);
+      const hashedRt = await bcrypt.hash(rt, 10);
       mockUserService.findById.mockResolvedValueOnce({
         hashedRt,
       });
@@ -350,7 +350,7 @@ describe('AuthService', () => {
 
   describe('changePassword', () => {
     it('should change password when the user is correct', async () => {
-      const hashedPassword = await argon.hash('password');
+      const hashedPassword = await bcrypt.hash('password', 10);
       const userWithHashedPassword: Partial<User> = {
         ...user,
         password: hashedPassword,
@@ -370,7 +370,7 @@ describe('AuthService', () => {
     });
 
     it('should throw BadRequestException when oldPassword is invalid', async () => {
-      const hashedPassword = await argon.hash('password');
+      const hashedPassword = await bcrypt.hash('password', 10);
       const userWithHashedPassword: Partial<User> = {
         ...user,
         password: hashedPassword,

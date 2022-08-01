@@ -8,20 +8,20 @@ datasource db {
 }
 
 model User {
-  id             Int      @id @default(autoincrement())
+  id             String   @id @default(uuid())
   email          String   @db.VarChar(255) @unique
   name           String   @db.VarChar(255)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
   password       String   @db.VarChar(255)
   hashedRt       String?  @db.VarChar(255)
   email_verified Boolean? @default(false)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
   @@map("users")
 }
 
 model ForgotPassword {
-  id         Int      @id @default(autoincrement())
+  id         String   @id @default(uuid())
   email      String   @db.VarChar(255) @unique
   token      String   @db.VarChar(400)
   created_at DateTime @default(now())
@@ -29,3 +29,4 @@ model ForgotPassword {
 
   @@map("forgot_passwords")
 }
+

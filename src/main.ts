@@ -18,8 +18,8 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .addBearerAuth()
-    .setTitle('API example')
-    .setDescription('The example API description')
+    .setTitle('API Easyvet')
+    .setDescription('Inteligência Veterinária')
     .setVersion('1.0')
     .addTag('auth')
     .addTag('user')
@@ -27,6 +27,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3333);
+  await app.listen(3333, () => {
+    console.log('Application running on http://localhost:3333/api');
+  });
 }
 bootstrap();

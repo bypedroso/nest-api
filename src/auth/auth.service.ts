@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
-import * as argon from 'argon2';
+import * as bcrypt from 'bcrypt';
 import { MailService } from '../mail/mail.service';
 import { UserService } from '../user/user.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,13 +32,15 @@ export class AuthService {
       const userEmail = await this.userService.findByEmail(dto.email);
 
       if (userEmail) {
-        throw new BadRequestException('E-mail is already in use!');
+        throw new BadRequestException('E-mail já está em uso!');
       }
 
       const user = await this.userService.createUser(dto);
 
       const tokens = await this.getTokens(user.id, user.email);
+
       await this.updateRtHash(user.id, tokens.refresh_token);
+
       this.sendEmailVerificationMail(user);
 
       return {
@@ -51,7 +53,7 @@ export class AuthService {
     } catch (error) {
       if (
         error instanceof BadRequestException &&
-        error.message === 'E-mail is already in use!'
+        error.message === 'E-mail já está em uso!'
       ) {
         throw error;
       }
@@ -72,13 +74,19 @@ export class AuthService {
       );
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw new ForbiddenException('Access Denied');
+        throw new ForbiddenException(
+          'Acesso negado, verifique seu usuário ou senha!',
+        );
       }
       throw new InternalServerErrorException(error);
     }
 
-    const passwordMatches = await argon.verify(user.password, dto.password);
-    if (!passwordMatches) throw new ForbiddenException('Access Denied');
+    const passwordMatches = await bcrypt.compare(dto.password, user.password);
+
+    if (!passwordMatches)
+      throw new ForbiddenException(
+        'Acesso negado, verifique seu usuário ou senha!',
+      );
 
     const tokens = await this.getTokens(user.id, user.email);
     await this.updateRtHash(user.id, tokens.refresh_token);
@@ -92,7 +100,7 @@ export class AuthService {
     };
   }
 
-  async logout(userId: number): Promise<boolean> {
+  async logout(userId: string): Promise<boolean> {
     await this.userService.updateMany({
       where: {
         id: userId,
@@ -107,8 +115,9 @@ export class AuthService {
     return true;
   }
 
-  async refreshTokens(userId: number, rt: string): Promise<Tokens> {
+  async refreshTokens(userId: string, rt: string): Promise<Tokens> {
     let user: User;
+
     try {
       user = await this.userService.findById(userId);
     } catch (error) {
@@ -120,7 +129,8 @@ export class AuthService {
 
     if (!user.hashedRt) throw new ForbiddenException('Access Denied');
 
-    const rtMatches = await argon.verify(user.hashedRt, rt);
+    const rtMatches = await bcrypt.compare(rt, user.hashedRt);
+
     if (!rtMatches) throw new ForbiddenException('Access Denied');
 
     const tokens = await this.getTokens(user.id, user.email);
@@ -129,13 +139,13 @@ export class AuthService {
     return tokens;
   }
 
-  async updateRtHash(userId: number, rt: string): Promise<void> {
-    const hash = await argon.hash(rt);
+  async updateRtHash(userId: string, rt: string): Promise<void> {
+    const hash = await bcrypt.hash(rt, 10);
 
     await this.userService.updateUser(userId, { hashedRt: hash });
   }
 
-  async getTokens(userId: number, email: string): Promise<Tokens> {
+  async getTokens(userId: string, email: string): Promise<Tokens> {
     const jwtPayload: JwtPayload = {
       sub: userId,
       email: email,
@@ -169,11 +179,12 @@ export class AuthService {
 
     const url = `${process.env.FRONTEND_URL}/auth/email/verify/${token}`;
 
-    this.mailService.sendUserConfirmation(user, 'BlaBla', url);
+    this.mailService.sendUserConfirmation(user, 'Easyvet', url);
   }
 
-  async resendVerifyEmail(userId: number): Promise<void> {
+  async resendVerifyEmail(userId: string): Promise<void> {
     let user: User;
+
     try {
       user = await this.userService.findById(userId);
     } catch (error) {
@@ -208,22 +219,22 @@ export class AuthService {
   }
 
   async changePassword(
-    id: number,
+    id: string,
     oldPassword: string,
     newPassword: string,
   ): Promise<any> {
     const user = await this.userService.findById(id);
 
-    const isOldPasswordCorrect: boolean = await argon.verify(
-      user.password,
+    const isOldPasswordCorrect: boolean = await bcrypt.compare(
       oldPassword,
+      user.password,
     );
 
     if (!isOldPasswordCorrect) {
       throw new UnauthorizedException('Old password is not correct');
     }
 
-    const password = await argon.hash(newPassword);
+    const password = await bcrypt.hash(newPassword, 10);
 
     return await this.userService.updateUser(user.id, {
       password,
@@ -293,7 +304,7 @@ export class AuthService {
       throw new BadRequestException('Invalid token');
     }
 
-    const hashedPassword = await argon.hash(newPassword);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     const user = await this.userService.find({
       where: { email: forgotToken.email },
