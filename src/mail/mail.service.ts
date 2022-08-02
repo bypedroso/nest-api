@@ -1,12 +1,12 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Usuario } from '@prisma/client';
 import { join } from 'path';
 @Injectable()
 export class MailService {
   constructor(private mailerService: MailerService) {}
 
-  async sendUserConfirmation(user: User, app_name: string, url: string) {
+  async sendUserConfirmation(user: Usuario, app_name: string, url: string) {
     await this.mailerService.sendMail({
       to: user.email,
       subject: 'Bem vindo ao Easyvet! Confirme seu Email',
@@ -18,7 +18,7 @@ export class MailService {
         'confirmation.hbs',
       ),
       context: {
-        name: user.name,
+        name: user.nome,
         url,
         app_name,
       },

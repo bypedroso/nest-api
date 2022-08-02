@@ -9,14 +9,14 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { GetCurrentUserId } from '../common/decorators';
-import { UserService } from './user.service';
+import { UsuarioService } from './usuario.service';
 import { UpdateUserDto, ResponseUserDto } from './dto';
 
 @ApiBearerAuth()
-@ApiTags('user')
-@Controller('user')
-export class UserController {
-  constructor(private userService: UserService) {}
+@ApiTags('usuario')
+@Controller('usuario')
+export class UsuarioController {
+  constructor(private usuarioService: UsuarioService) {}
 
   @Put('')
   @HttpCode(HttpStatus.OK)
@@ -27,10 +27,10 @@ export class UserController {
     if (!dto.email && !dto.name) {
       return;
     }
-    const user = await this.userService.updateUser(userId, dto);
+    const user = await this.usuarioService.updateUser(userId, dto);
     const responseUser = {
       email: user.email,
-      name: user.name,
+      name: user.nome,
     };
     return responseUser;
   }
@@ -38,11 +38,11 @@ export class UserController {
   @Get('whoami')
   @HttpCode(HttpStatus.OK)
   async getUser(@GetCurrentUserId() userId: string): Promise<ResponseUserDto> {
-    const user = await this.userService.findById(userId);
+    const user = await this.usuarioService.findById(userId);
     const responseUser = {
       email: user.email,
-      email_verified: user.email_verified,
-      name: user.name,
+      email_verified: user.email_verificado,
+      name: user.nome,
     };
     return responseUser;
   }

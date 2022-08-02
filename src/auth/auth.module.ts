@@ -6,11 +6,11 @@ import { AuthService } from './auth.service';
 import { AtStrategy, RtStrategy } from './strategies';
 
 import { MailModule } from '../mail/mail.module';
-import { UserModule } from '../user/user.module';
+import { UsuarioModule } from '../usuario/usuario.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BlockListModule } from '../blocklist/blocklist.module';
 import { BlockListService } from '../blocklist/blocklist.service';
-import { ClinicModule } from 'src/clinic/clinic.module';
+import { ClinicaModule } from 'src/clinica/clinica.module';
 
 @Module({
   imports: [
@@ -22,8 +22,8 @@ import { ClinicModule } from 'src/clinic/clinic.module';
       inject: [ConfigService],
     }),
     MailModule,
-    UserModule,
-    ClinicModule,
+    UsuarioModule,
+    ClinicaModule,
     BlockListModule,
   ],
   controllers: [AuthController],

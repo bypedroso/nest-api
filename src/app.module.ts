@@ -6,9 +6,9 @@ import { AtGuard } from './common/guards';
 import { PrismaModule } from './prisma/prisma.module';
 import { LoggerModule } from './logger/logger.module';
 import { MailModule } from './mail/mail.module';
-import { UserModule } from './user/user.module';
+import { UsuarioModule } from './usuario/usuario.module';
 import { BlockListModule } from './blocklist/blocklist.module';
-import { ClinicModule } from './clinic/clinic.module';
+import { ClinicaModule } from './clinica/clinica.module';
 
 @Module({
   imports: [
@@ -17,9 +17,9 @@ import { ClinicModule } from './clinic/clinic.module';
     PrismaModule,
     LoggerModule,
     MailModule,
-    UserModule,
+    UsuarioModule,
     BlockListModule,
-    ClinicModule,
+    ClinicaModule,
   ],
   providers: [
     {

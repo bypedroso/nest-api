@@ -39,7 +39,7 @@ export class AuthController {
   @Post('local/signup')
   @HttpCode(HttpStatus.CREATED)
   signupLocal(@Body() dto: CreateAccountDto): Promise<Auth> {
-    return this.authService.signupLocal(dto);
+    return this.authService.register(dto);
   }
 
   @Public()

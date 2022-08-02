@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
-describe('UserService', () => {
+describe('usuarioService', () => {
   let prismaService: PrismaService;
   let moduleRef: TestingModule;
 

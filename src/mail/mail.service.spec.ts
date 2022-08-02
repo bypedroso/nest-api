@@ -3,7 +3,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 
 import { MailService } from './mail.service';
 
-describe('UserService', () => {
+describe('usuarioService', () => {
   let mailService: MailService;
   let moduleRef: TestingModule;
 

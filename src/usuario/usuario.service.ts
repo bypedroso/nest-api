@@ -5,20 +5,22 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { Prisma, Usuario } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from '../auth/dto/create-user.dto';
 import { CreateAccountDto } from 'src/auth/dto';
 
-export type UpdateProperties = Partial<Omit<User, 'updated_at' | 'created_at'>>;
+export type UpdateProperties = Partial<
+  Omit<Usuario, 'updated_at' | 'created_at'>
+>;
 
 @Injectable()
-export class UserService {
+export class UsuarioService {
   constructor(private prismaService: PrismaService) {}
 
-  async findById(id: string): Promise<User> {
-    const user = await this.prismaService.user.findUnique({
+  async findById(id: string): Promise<Usuario> {
+    const user = await this.prismaService.usuario.findUnique({
       where: {
         id,
       },
@@ -30,8 +32,8 @@ export class UserService {
     return user;
   }
 
-  async findByEmail(email: string): Promise<User | undefined> {
-    const user = await this.prismaService.user.findUnique({
+  async findByEmail(email: string): Promise<Usuario | undefined> {
+    const user = await this.prismaService.usuario.findUnique({
       where: {
         email,
       },
@@ -41,10 +43,10 @@ export class UserService {
   }
 
   async find(
-    options: Prisma.UserFindUniqueArgs,
+    options: Prisma.UsuarioFindUniqueArgs,
     withPassword = false,
-  ): Promise<User> {
-    const user = await this.prismaService.user.findUnique(options);
+  ): Promise<Usuario> {
+    const user = await this.prismaService.usuario.findUnique(options);
     if (!user) {
       throw new BadRequestException('User does not found');
     }
@@ -54,15 +56,15 @@ export class UserService {
     return user;
   }
 
-  async createUser(dto: CreateUserDto): Promise<User> {
+  async createUser(dto: CreateUserDto): Promise<Usuario> {
     const password = await bcrypt.hash(dto.password, 10);
 
-    const newUser = await this.prismaService.user
+    const newUser = await this.prismaService.usuario
       .create({
         data: {
           email: dto.email,
           password: password,
-          name: dto.name,
+          nome: dto.name,
         },
       })
       .catch((error) => {
@@ -78,10 +80,47 @@ export class UserService {
     return newUser;
   }
 
-  async updateUser(id: string, properties: UpdateProperties): Promise<User> {
+  async registerUser(dto: CreateAccountDto): Promise<Usuario> {
+    const password = await bcrypt.hash(dto.password, 10);
+
+    const newUser = await this.prismaService.usuario
+      .create({
+        data: {
+          email: dto.email,
+          password: password,
+          nome: dto.name,
+          clinicas: {
+            create: [
+              {
+                admin: true,
+                clinica: {
+                  create: {
+                    cnpj: dto.clinica_cnpj,
+                    nome: dto.clinica_name,
+                  },
+                },
+              },
+            ],
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            throw new ForbiddenException('Credentials incorrect');
+          }
+        }
+
+        throw error;
+      });
+
+    return newUser;
+  }
+
+  async updateUser(id: string, properties: UpdateProperties): Promise<Usuario> {
     try {
       if (properties.email) {
-        const hasEmail = await this.prismaService.user.findFirst({
+        const hasEmail = await this.prismaService.usuario.findFirst({
           where: {
             email: properties.email,
           },
@@ -91,7 +130,7 @@ export class UserService {
             'E-mail já está em uso por outro usuário!',
           );
       }
-      const updatedUser = await this.prismaService.user.update({
+      const updatedUser = await this.prismaService.usuario.update({
         data: {
           ...properties,
         },
@@ -114,10 +153,12 @@ export class UserService {
   }
 
   async updateMany(
-    properties: Prisma.UserUpdateManyArgs,
+    properties: Prisma.UsuarioUpdateManyArgs,
   ): Promise<Prisma.BatchPayload> {
     try {
-      const updatedUser = await this.prismaService.user.updateMany(properties);
+      const updatedUser = await this.prismaService.usuario.updateMany(
+        properties,
+      );
       return updatedUser;
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

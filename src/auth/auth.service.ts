@@ -7,11 +7,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { Usuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { MailService } from '../mail/mail.service';
-import { UserService } from '../user/user.service';
-import { ClinicService } from '../clinic/clinic.service';
+import { UsuarioService } from '../usuario/usuario.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { AuthDto } from './dto';
@@ -24,28 +23,19 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
-    private userService: UserService,
-    private clinicService: ClinicService,
+    private usuarioService: UsuarioService,
     private mailService: MailService,
   ) {}
 
   async signupLocal(dto: CreateAccountDto): Promise<Auth> {
     try {
-      const userEmail = await this.userService.findByEmail(dto.email);
+      const userEmail = await this.usuarioService.findByEmail(dto.email);
 
       if (userEmail) {
         throw new BadRequestException('E-mail já está em uso!');
       }
 
-      const user = await this.userService.createUser(dto);
-
-      const clinic = await this.clinicService.createClinicOnSignup(
-        dto.clinica_cnpj,
-        dto.clinica_name,
-        user.id,
-      );
-
-      
+      const user = await this.usuarioService.createUser(dto);
 
       const tokens = await this.getTokens(user.id, user.email);
 
@@ -56,12 +46,42 @@ export class AuthService {
       return {
         ...tokens,
         user: {
-          name: user.name,
+          name: user.nome,
           email: user.email,
         },
-        clinic: {
-          cnpj: clinic.cnpj,
-          name: clinic.name,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException &&
+        error.message === 'E-mail já está em uso!'
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async register(dto: CreateAccountDto): Promise<Auth> {
+    try {
+      const userEmail = await this.usuarioService.findByEmail(dto.email);
+
+      if (userEmail) {
+        throw new BadRequestException('E-mail já está em uso!');
+      }
+
+      const user = await this.usuarioService.registerUser(dto);
+
+      const tokens = await this.getTokens(user.id, user.email);
+
+      await this.updateRtHash(user.id, tokens.refresh_token);
+
+      this.sendEmailVerificationMail(user);
+
+      return {
+        ...tokens,
+        user: {
+          name: user.nome,
+          email: user.email,
         },
       };
     } catch (error) {
@@ -76,9 +96,9 @@ export class AuthService {
   }
 
   async signinLocal(dto: AuthDto): Promise<Auth> {
-    let user: User;
+    let user: Usuario;
     try {
-      user = await this.userService.find(
+      user = await this.usuarioService.find(
         {
           where: {
             email: dto.email,
@@ -95,6 +115,11 @@ export class AuthService {
       throw new InternalServerErrorException(error);
     }
 
+    if (!user.email_verificado)
+      throw new ForbiddenException(
+        'Acesso negado, valide seu cadastro por e-mail!',
+      );
+
     const passwordMatches = await bcrypt.compare(dto.password, user.password);
 
     if (!passwordMatches)
@@ -108,14 +133,14 @@ export class AuthService {
     return {
       ...tokens,
       user: {
-        name: user.name,
+        name: user.nome,
         email: user.email,
       },
     };
   }
 
   async logout(userId: string): Promise<boolean> {
-    await this.userService.updateMany({
+    await this.usuarioService.updateMany({
       where: {
         id: userId,
         hashedRt: {
@@ -130,10 +155,10 @@ export class AuthService {
   }
 
   async refreshTokens(userId: string, rt: string): Promise<Tokens> {
-    let user: User;
+    let user: Usuario;
 
     try {
-      user = await this.userService.findById(userId);
+      user = await this.usuarioService.findById(userId);
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw new ForbiddenException('Access Denied');
@@ -156,7 +181,7 @@ export class AuthService {
   async updateRtHash(userId: string, rt: string): Promise<void> {
     const hash = await bcrypt.hash(rt, 10);
 
-    await this.userService.updateUser(userId, { hashedRt: hash });
+    await this.usuarioService.updateUser(userId, { hashedRt: hash });
   }
 
   async getTokens(userId: string, email: string): Promise<Tokens> {
@@ -182,7 +207,7 @@ export class AuthService {
     };
   }
 
-  private sendEmailVerificationMail(user: User): void {
+  private sendEmailVerificationMail(user: Usuario): void {
     const token = this.jwtService.sign(
       { id: user.id },
       {
@@ -197,10 +222,10 @@ export class AuthService {
   }
 
   async resendVerifyEmail(userId: string): Promise<void> {
-    let user: User;
+    let user: Usuario;
 
     try {
-      user = await this.userService.findById(userId);
+      user = await this.usuarioService.findById(userId);
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw new ForbiddenException('Access Denied');
@@ -210,8 +235,8 @@ export class AuthService {
     this.sendEmailVerificationMail(user);
   }
 
-  async verifyEmail(token: string): Promise<User> {
-    let userFromTokenPayload: User;
+  async verifyEmail(token: string): Promise<Usuario> {
+    let userFromTokenPayload: Usuario;
 
     try {
       userFromTokenPayload = this.jwtService.verify(token, {
@@ -220,12 +245,12 @@ export class AuthService {
     } catch (error) {
       throw new BadRequestException('Invalid token');
     }
-    await this.userService.findById(userFromTokenPayload.id);
+    await this.usuarioService.findById(userFromTokenPayload.id);
 
-    const updatedUser = await this.userService.updateUser(
+    const updatedUser = await this.usuarioService.updateUser(
       userFromTokenPayload.id,
       {
-        email_verified: true,
+        email_verificado: true,
       },
     );
 
@@ -237,7 +262,7 @@ export class AuthService {
     oldPassword: string,
     newPassword: string,
   ): Promise<any> {
-    const user = await this.userService.findById(id);
+    const user = await this.usuarioService.findById(id);
 
     const isOldPasswordCorrect: boolean = await bcrypt.compare(
       oldPassword,
@@ -250,14 +275,14 @@ export class AuthService {
 
     const password = await bcrypt.hash(newPassword, 10);
 
-    return await this.userService.updateUser(user.id, {
+    return await this.usuarioService.updateUser(user.id, {
       password,
     });
   }
 
   async sendForgotPasswordLink(email: string) {
     try {
-      await this.userService.find({ where: { email } });
+      await this.usuarioService.find({ where: { email } });
     } catch (error) {
       if (error instanceof BadRequestException) {
         return;
@@ -272,7 +297,7 @@ export class AuthService {
         },
       );
 
-      await this.prisma.forgotPassword.upsert({
+      await this.prisma.esqueceuSenha.upsert({
         where: {
           email,
         },
@@ -295,8 +320,8 @@ export class AuthService {
     }
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<User> {
-    const forgotToken = await this.prisma.forgotPassword.findFirst({
+  async resetPassword(token: string, newPassword: string): Promise<Usuario> {
+    const forgotToken = await this.prisma.esqueceuSenha.findFirst({
       where: {
         token,
       },
@@ -320,11 +345,11 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    const user = await this.userService.find({
+    const user = await this.usuarioService.find({
       where: { email: forgotToken.email },
     });
 
-    const updatedUser = await this.userService.updateUser(user.id, {
+    const updatedUser = await this.usuarioService.updateUser(user.id, {
       password: hashedPassword,
     });
 

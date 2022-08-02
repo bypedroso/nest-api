@@ -7,52 +7,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             String   @id @default(uuid())
-  email          String   @db.VarChar(255) @unique
-  name           String   @db.VarChar(255)
-  password       String   @db.VarChar(255)
-  hashedRt       String?  @db.VarChar(255)
-  email_verified Boolean? @default(false)
-  clinics        UsersOnClinics[]
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+model Usuario {
+  id               String              @id @default(uuid())
+  email            String              @unique @db.VarChar(255)
+  nome             String              @db.VarChar(255)
+  password         String              @db.VarChar(255)
+  hashedRt         String?             @db.VarChar(255)
+  email_verificado Boolean?            @default(false)
+  clinicas         UsuariosDaClinica[]
+  created_at       DateTime            @default(now())
+  updated_at       DateTime            @updatedAt
 
-  @@map("users")
+  @@map("usuarios")
 }
 
-model Clinic {
-  id                      String   @id @default(uuid())
-  cnpj                    String   @db.VarChar(255) @unique
-  name                    String   @db.VarChar(255)
-  responsible_user_id     String   @db.VarChar(255)
-  users                   UsersOnClinics[]
-  created_at              DateTime @default(now())
-  updated_at              DateTime @updatedAt
+model Clinica {
+  id         String              @id @default(uuid())
+  cnpj       String              @unique @db.VarChar(255)
+  nome       String              @db.VarChar(255)
+  usuarios   UsuariosDaClinica[]
+  created_at DateTime            @default(now())
+  updated_at DateTime            @updatedAt
 
-  @@map("clinics")
+  @@map("clinicas")
 }
 
-model UsersOnClinics {
-  id             String   @id @default(uuid())
-  user           User     @relation(fields: [user_id], references: [id])
-  user_id        String
-  clinic         Clinic   @relation(fields: [clinic_id], references: [id])
-  clinic_id      String
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-
-  @@map("users_clinics")
-}
-
-
-model ForgotPassword {
+model UsuariosDaClinica {
   id         String   @id @default(uuid())
-  email      String   @db.VarChar(255) @unique
+  usuario    Usuario? @relation(fields: [usuario_id], references: [id])
+  usuario_id String?
+  clinica    Clinica? @relation(fields: [clinica_id], references: [id])
+  clinica_id String?
+  admin      Boolean?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("usuarios_clinicas")
+}
+
+model EsqueceuSenha {
+  id         String   @id @default(uuid())
+  email      String   @unique @db.VarChar(255)
   token      String   @db.VarChar(400)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@map("forgot_passwords")
+  @@map("esqueceu_senha")
 }
-

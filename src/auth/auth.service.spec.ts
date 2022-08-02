@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { Tokens } from './types';
 import * as bcrypt from 'bcrypt';
-import { UserService } from '../user/user.service';
+import { usuarioService } from '../usuario/user.service';
 import { MailService } from '../mail/mail.service';
 import {
   BadRequestException,
@@ -44,7 +44,7 @@ describe('AuthService', () => {
     sendResetPasswordLink: jest.fn(),
   };
 
-  const mockUserService = {
+  const mockusuarioService = {
     updateUser: jest.fn(),
     find: jest.fn(),
     findById: jest.fn(),
@@ -64,8 +64,8 @@ describe('AuthService', () => {
         },
         ConfigService,
         {
-          provide: UserService,
-          useValue: mockUserService,
+          provide: usuarioService,
+          useValue: mockusuarioService,
         },
         {
           provide: MailService,
@@ -84,7 +84,7 @@ describe('AuthService', () => {
 
   describe('signup', () => {
     it('should signup', async () => {
-      mockUserService.createUser.mockResolvedValueOnce({
+      mockusuarioService.createUser.mockResolvedValueOnce({
         ...user,
         id: '1',
       });
@@ -100,7 +100,7 @@ describe('AuthService', () => {
 
     it('should throw an error on duplicate user signup', async () => {
       let tokens: Tokens | undefined;
-      mockUserService.findByEmail.mockRejectedValueOnce(
+      mockusuarioService.findByEmail.mockRejectedValueOnce(
         new BadRequestException('E-mail is already in use!'),
       );
       try {
@@ -119,7 +119,7 @@ describe('AuthService', () => {
 
     it('should throw an error on unexpected error', async () => {
       let tokens: Tokens | undefined;
-      mockUserService.findByEmail.mockRejectedValueOnce(
+      mockusuarioService.findByEmail.mockRejectedValueOnce(
         new ForbiddenException('Unexpected error!'),
       );
       try {
@@ -139,7 +139,7 @@ describe('AuthService', () => {
 
   describe('signin', () => {
     it('should throw if no existing user', async () => {
-      mockUserService.find.mockRejectedValueOnce(
+      mockusuarioService.find.mockRejectedValueOnce(
         new BadRequestException('User does not found'),
       );
       let tokens: Tokens | undefined;
@@ -158,7 +158,7 @@ describe('AuthService', () => {
 
     it('should login', async () => {
       const password = await bcrypt.hash(user.password, 10);
-      mockUserService.find.mockResolvedValueOnce({
+      mockusuarioService.find.mockResolvedValueOnce({
         ...user,
         password,
         id: '1',
@@ -175,7 +175,7 @@ describe('AuthService', () => {
 
     it('should throw if password incorrect', async () => {
       const password = await bcrypt.hash(user.password, 10);
-      mockUserService.find.mockResolvedValueOnce({
+      mockusuarioService.find.mockResolvedValueOnce({
         ...user,
         password,
         id: '1',
@@ -195,7 +195,9 @@ describe('AuthService', () => {
     });
 
     it('should throw if unexpected error happens', async () => {
-      mockUserService.find.mockRejectedValueOnce(new Error('Unexpected error'));
+      mockusuarioService.find.mockRejectedValueOnce(
+        new Error('Unexpected error'),
+      );
       let tokens: Tokens | undefined;
       try {
         tokens = await authService.signinLocal({
@@ -215,13 +217,13 @@ describe('AuthService', () => {
     it('should pass if call to non existent user', async () => {
       const result = await authService.logout(4);
       expect(result).toBeDefined();
-      expect(mockUserService.updateMany).toHaveBeenCalled();
+      expect(mockusuarioService.updateMany).toHaveBeenCalled();
     });
   });
 
   describe('refresh', () => {
     it('should throw if not existing user', async () => {
-      mockUserService.findById.mockRejectedValueOnce(
+      mockusuarioService.findById.mockRejectedValueOnce(
         new BadRequestException('User does not found'),
       );
       let tokens: Tokens | undefined;
@@ -235,7 +237,7 @@ describe('AuthService', () => {
       expect(tokens).toBeUndefined();
     });
     it('should throw InternalServerErrorException if an unexpected error has occurred', async () => {
-      mockUserService.findById.mockRejectedValueOnce(
+      mockusuarioService.findById.mockRejectedValueOnce(
         new Error('Unexpected error'),
       );
       let tokens: Tokens | undefined;
@@ -249,7 +251,7 @@ describe('AuthService', () => {
       expect(tokens).toBeUndefined();
     });
     it('should throw if user logged out', async () => {
-      mockUserService.findById.mockResolvedValueOnce({
+      mockusuarioService.findById.mockResolvedValueOnce({
         hashedRt: undefined,
       });
       let tokens: Tokens | undefined;
@@ -266,7 +268,7 @@ describe('AuthService', () => {
     it('should throw if refresh token incorrect', async () => {
       const rt = 'hash';
       const hashedRt = await bcrypt.hash(rt, 10);
-      mockUserService.findById.mockResolvedValueOnce({
+      mockusuarioService.findById.mockResolvedValueOnce({
         hashedRt,
       });
       let tokens: Tokens | undefined;
@@ -283,7 +285,7 @@ describe('AuthService', () => {
     it('should throw if refresh token incorrect', async () => {
       const rt = 'hash';
       const hashedRt = await bcrypt.hash(rt, 10);
-      mockUserService.findById.mockResolvedValueOnce({
+      mockusuarioService.findById.mockResolvedValueOnce({
         hashedRt,
       });
 
@@ -297,10 +299,10 @@ describe('AuthService', () => {
   });
 
   describe('updateRtHash', () => {
-    it('should call userService.updateUser', async () => {
+    it('should call usuarioService.updateUser', async () => {
       await authService.updateRtHash(1, 'hash');
 
-      expect(mockUserService.updateUser).toHaveBeenCalled();
+      expect(mockusuarioService.updateUser).toHaveBeenCalled();
     });
   });
 
@@ -309,7 +311,7 @@ describe('AuthService', () => {
       const jwtService = moduleRef.get(JwtService);
       const spy = jest.spyOn(jwtService, 'verify');
       spy.mockReturnValue({ user, id: 1 });
-      mockUserService.updateUser.mockResolvedValueOnce({
+      mockusuarioService.updateUser.mockResolvedValueOnce({
         ...user,
 
         email_verified: true,
@@ -319,8 +321,8 @@ describe('AuthService', () => {
 
       expect(spy).toHaveBeenCalled();
       expect(spy).toHaveBeenCalledWith('token', { secret: 'secret' });
-      expect(mockUserService.updateUser).toHaveBeenCalled();
-      expect(mockUserService.updateUser).toHaveBeenCalledWith(1, {
+      expect(mockusuarioService.updateUser).toHaveBeenCalled();
+      expect(mockusuarioService.updateUser).toHaveBeenCalledWith(1, {
         email_verified: true,
       });
       expect(r).toMatchObject({
@@ -357,8 +359,10 @@ describe('AuthService', () => {
         id: 1,
       };
 
-      mockUserService.findById.mockResolvedValueOnce(userWithHashedPassword);
-      mockUserService.updateUser.mockResolvedValueOnce(userWithHashedPassword);
+      mockusuarioService.findById.mockResolvedValueOnce(userWithHashedPassword);
+      mockusuarioService.updateUser.mockResolvedValueOnce(
+        userWithHashedPassword,
+      );
 
       const updatedUser = await authService.changePassword(
         1,
@@ -366,7 +370,7 @@ describe('AuthService', () => {
         'newPassword',
       );
       expect(updatedUser).toMatchObject(userWithHashedPassword);
-      expect(mockUserService.updateUser).toHaveBeenCalled();
+      expect(mockusuarioService.updateUser).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when oldPassword is invalid', async () => {
@@ -378,13 +382,15 @@ describe('AuthService', () => {
       };
 
       try {
-        mockUserService.updateUser.mockResolvedValueOnce(
+        mockusuarioService.updateUser.mockResolvedValueOnce(
           userWithHashedPassword,
         );
-        mockUserService.findById.mockResolvedValueOnce(userWithHashedPassword);
+        mockusuarioService.findById.mockResolvedValueOnce(
+          userWithHashedPassword,
+        );
         await authService.changePassword(1, 'test', 'newPassword');
         expect(user).toMatchObject(userWithHashedPassword);
-        expect(mockUserService.updateUser).toHaveBeenCalled();
+        expect(mockusuarioService.updateUser).toHaveBeenCalled();
       } catch (error) {
         expect(error).toBeInstanceOf(UnauthorizedException);
         expect(error.message).toBe('Old password is not correct');
@@ -393,7 +399,7 @@ describe('AuthService', () => {
   });
   describe('sendForgotPasswordLink', () => {
     it('should do nothing when e-mail is invalid', async () => {
-      mockUserService.find.mockRejectedValueOnce(
+      mockusuarioService.find.mockRejectedValueOnce(
         new BadRequestException('User does not found'),
       );
       const sendForgotPasswordLinkReturn =
@@ -403,7 +409,7 @@ describe('AuthService', () => {
     });
 
     it('should do nothing when e-mail is invalid', async () => {
-      mockUserService.find.mockResolvedValueOnce(user);
+      mockusuarioService.find.mockResolvedValueOnce(user);
       mockPrismaService.forgotPassword.upsert.mockRejectedValueOnce(
         new Error('Unexpected Error'),
       );
@@ -422,7 +428,7 @@ describe('AuthService', () => {
       spy.mockImplementationOnce(() => {
         return 'token';
       });
-      mockUserService.find.mockResolvedValueOnce(user);
+      mockusuarioService.find.mockResolvedValueOnce(user);
       mockPrismaService.forgotPassword.upsert.mockResolvedValueOnce(user);
       await authService.sendForgotPasswordLink('example@example.com');
 
@@ -458,7 +464,7 @@ describe('AuthService', () => {
 
   describe('resendVerifyEmail', () => {
     it('should resend verify e-mail', async () => {
-      mockUserService.findById.mockResolvedValueOnce({
+      mockusuarioService.findById.mockResolvedValueOnce({
         ...user,
         id: '1',
       });
@@ -467,7 +473,7 @@ describe('AuthService', () => {
     });
 
     it('should throw an error when unexpected error occurs', async () => {
-      mockUserService.findById.mockRejectedValueOnce(
+      mockusuarioService.findById.mockRejectedValueOnce(
         new InternalServerErrorException('Unexpected error'),
       );
       try {
@@ -478,7 +484,7 @@ describe('AuthService', () => {
       }
     });
     it('should throw an error when user does not exist', async () => {
-      mockUserService.findById.mockRejectedValueOnce(
+      mockusuarioService.findById.mockRejectedValueOnce(
         new BadRequestException('User does not exist'),
       );
       try {
@@ -552,7 +558,7 @@ describe('AuthService', () => {
         email: 'example@example.com',
       });
 
-      mockUserService.find.mockRejectedValueOnce(
+      mockusuarioService.find.mockRejectedValueOnce(
         new BadRequestException('User does not found'),
       );
       try {
@@ -576,12 +582,12 @@ describe('AuthService', () => {
         email: 'example@example.com',
       });
 
-      mockUserService.find.mockResolvedValue({
+      mockusuarioService.find.mockResolvedValue({
         ...user,
         id: 1,
       });
 
-      mockUserService.updateUser.mockImplementationOnce((id) => {
+      mockusuarioService.updateUser.mockImplementationOnce((id) => {
         return {
           ...user,
           id,
@@ -600,8 +606,8 @@ describe('AuthService', () => {
         password: 'hashPassword',
       });
       expect(spy).toHaveBeenCalled();
-      expect(mockUserService.find).toHaveBeenCalled();
-      expect(mockUserService.updateUser).toHaveBeenCalled();
+      expect(mockusuarioService.find).toHaveBeenCalled();
+      expect(mockusuarioService.updateUser).toHaveBeenCalled();
       expect(mockPrismaService.forgotPassword.findFirst).toHaveBeenCalled();
     });
   });
